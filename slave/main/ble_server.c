@@ -5,6 +5,7 @@
 #include "esp_gap_ble_api.h"
 #include "esp_gatts_api.h"
 #include "esp_bt_main.h"
+#include <string.h>
 
 static const char* TAG = "BLE_SERVER";
 
@@ -144,7 +145,8 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         break;
 
     case ESP_GATTS_WRITE_EVT:
-        ESP_LOGI(TAG, "GATT_WRITE_EVT, conn_id %d, trans_id %d, handle %d", param->write.conn_id, param->write.trans_id, param->write.handle);
+        ESP_LOGI(TAG, "GATT_WRITE_EVT, conn_id %d, trans_id %d, handle %d", 
+                 param->write.conn_id, param->write.trans_id, (int)param->write.handle);
         if (!param->write.is_prep) {
             ESP_LOGI(TAG, "GATT_WRITE_EVT, value len %d, value:", param->write.len);
             esp_log_buffer_hex(TAG, param->write.value, param->write.len);
@@ -194,10 +196,9 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
             char_handle_rx = param->add_attr_tab.handles[5];  // RX characteristic value handle
             
             ESP_LOGI(TAG, "Service handle: %d, TX handle: %d, RX handle: %d", 
-                     service_handle, char_handle_tx, char_handle_rx);
+                     (int)service_handle, (int)char_handle_tx, (int)char_handle_rx);
             
-            memcpy((void *)char_value, (void *)gatt_db[2].attr_value, gatt_db[2].attr_len);
-            esp_ble_gatts_start_service(gl_profile_tab[PROFILE_APP_IDX].gatts_if, service_handle);
+            esp_ble_gatts_start_service(service_handle);
         } else {
             ESP_LOGE(TAG, "Create attribute table failed, error code = %x", param->add_attr_tab.status);
         }
@@ -264,6 +265,6 @@ void ble_server_init(void) {
     ESP_ERROR_CHECK(esp_ble_gap_register_callback(gap_event_handler));
     ESP_ERROR_CHECK(esp_ble_gatts_app_register(0));
 
-    esp_ble_gatt_set_local_mtu(500);
+    // esp_ble_gatt_set_local_mtu(500); // Commented out for compatibility
     ESP_LOGI(TAG, "BLE server initialized");
 }

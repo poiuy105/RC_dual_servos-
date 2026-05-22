@@ -154,7 +154,7 @@ void ble_client_init(void) {
     ESP_ERROR_CHECK(esp_ble_gattc_register_callback(esp_gattc_cb));
     ESP_ERROR_CHECK(esp_ble_gap_register_callback(esp_gap_cb));
     ESP_ERROR_CHECK(esp_ble_gattc_app_register(0));
-    esp_ble_gatt_set_local_mtu(500);
+    // esp_ble_gatt_set_local_mtu(500); // Commented out for compatibility
 }
 
 bool ble_client_is_connected(void) {
