@@ -57,6 +57,15 @@ static const uint16_t GATTS_CHAR_UUID_TEST_RX = 0xFF02;
 static uint8_t char_value[4] = {0x11, 0x22, 0x33, 0x44};
 static uint16_t service_handle = 0;
 
+static esp_ble_adv_params_t adv_params = {
+    .adv_int_min = 0x20,
+    .adv_int_max = 0x40,
+    .adv_type = ADV_TYPE_IND,
+    .own_addr_type = BLE_ADDR_TYPE_PUBLIC,
+    .channel_map = ADV_CHNL_ALL,
+    .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+};
+
 static const esp_gatts_attr_db_t gatt_db[6] = {
     // Service Declaration
     [0] = {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&primary_service_uuid, ESP_GATT_PERM_READ,
@@ -86,10 +95,14 @@ static const esp_gatts_attr_db_t gatt_db[6] = {
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
     case ESP_GAP_BLE_ADV_DATA_SET_COMPLETE_EVT:
-        esp_ble_gap_start_advertising(NULL);
+        esp_ble_gap_start_advertising(&adv_params);
         break;
     case ESP_GAP_BLE_ADV_START_COMPLETE_EVT:
-        ESP_LOGI(TAG, "Advertising started");
+        if (param->adv_start_cmpl.status != ESP_BT_STATUS_SUCCESS) {
+            ESP_LOGE(TAG, "Advertising start failed, error status = %x", param->adv_start_cmpl.status);
+        } else {
+            ESP_LOGI(TAG, "Advertising started successfully");
+        }
         break;
     default:
         break;
@@ -167,7 +180,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
     case ESP_GATTS_DISCONNECT_EVT:
         ESP_LOGI(TAG, "DISCONNECT_EVT, reason = %d", param->disconnect.reason);
         connected = false;
-        esp_ble_gap_start_advertising(NULL);
+        esp_ble_gap_start_advertising(&adv_params);
         break;
 
     case ESP_GATTS_CREAT_ATTR_TAB_EVT:
