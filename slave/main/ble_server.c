@@ -41,6 +41,9 @@ static struct gatts_profile_inst gl_profile_tab[PROFILE_NUM] = {
     },
 };
 
+#define GATTS_DEMO_CHAR_VAL_LEN_MAX 0x40
+#define CHAR_DECLARATION_SIZE (sizeof(uint8_t))
+
 static const uint16_t primary_service_uuid = ESP_GATT_UUID_PRI_SERVICE;
 static const uint16_t character_declaration_uuid = ESP_GATT_UUID_CHAR_DECLARE;
 static const uint16_t character_client_config_uuid = ESP_GATT_UUID_CHAR_CLIENT_CONFIG;
@@ -52,8 +55,9 @@ static const uint16_t GATTS_CHAR_UUID_TEST_TX = 0xFF01;
 static const uint16_t GATTS_CHAR_UUID_TEST_RX = 0xFF02;
 
 static uint8_t char_value[4] = {0x11, 0x22, 0x33, 0x44};
+static uint16_t service_handle = 0;
 
-static const esp_gatts_attr_db_t gatt_db[10] = {
+static const esp_gatts_attr_db_t gatt_db[6] = {
     // Service Declaration
     [0] = {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&primary_service_uuid, ESP_GATT_PERM_READ,
       sizeof(uint16_t), sizeof(GATTS_SERVICE_UUID_TEST), (uint8_t *)&GATTS_SERVICE_UUID_TEST}},
@@ -78,9 +82,6 @@ static const esp_gatts_attr_db_t gatt_db[10] = {
     [5] = {{ESP_GATT_AUTO_RSP}, {ESP_UUID_LEN_16, (uint8_t *)&GATTS_CHAR_UUID_TEST_RX, ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
       GATTS_DEMO_CHAR_VAL_LEN_MAX, 0, NULL}},
 };
-
-#define GATTS_DEMO_CHAR_VAL_LEN_MAX 0x40
-#define CHAR_DECLARATION_SIZE (sizeof(uint8_t))
 
 static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param_t *param) {
     switch (event) {
@@ -122,7 +123,7 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
         };
         
         esp_ble_gap_config_adv_data(&adv_data);
-        esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, 10, 0);
+        esp_ble_gatts_create_attr_tab(gatt_db, gatts_if, 6, 0);
         break;
 
     case ESP_GATTS_READ_EVT:
@@ -171,13 +172,21 @@ static void gatts_profile_event_handler(esp_gatts_cb_event_t event,
 
     case ESP_GATTS_CREAT_ATTR_TAB_EVT:
         ESP_LOGI(TAG, "The number handle = %x", param->add_attr_tab.num_handle);
-        if (param->create.status == ESP_GATT_OK) {
+        if (param->add_attr_tab.status == ESP_GATT_OK) {
             ESP_LOGI(TAG, "Create attribute table successfully, the number handle = %d", param->add_attr_tab.num_handle);
+            
+            // Save handles
+            service_handle = param->add_attr_tab.handles[0];
+            char_handle_tx = param->add_attr_tab.handles[2];  // TX characteristic value handle
+            char_handle_rx = param->add_attr_tab.handles[5];  // RX characteristic value handle
+            
+            ESP_LOGI(TAG, "Service handle: %d, TX handle: %d, RX handle: %d", 
+                     service_handle, char_handle_tx, char_handle_rx);
+            
             memcpy((void *)char_value, (void *)gatt_db[2].attr_value, gatt_db[2].attr_len);
-            esp_ble_gatts_start_service(gl_profile_tab[PROFILE_APP_IDX].gatts_if, 
-                                       gl_profile_tab[PROFILE_APP_IDX].app_id);
+            esp_ble_gatts_start_service(gl_profile_tab[PROFILE_APP_IDX].gatts_if, service_handle);
         } else {
-            ESP_LOGE(TAG, "Create attribute table failed, error code = %x", param->create.status);
+            ESP_LOGE(TAG, "Create attribute table failed, error code = %x", param->add_attr_tab.status);
         }
         break;
 

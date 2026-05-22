@@ -110,9 +110,26 @@ static void esp_gattc_cb(esp_gattc_cb_event_t event, esp_gatt_if_t gattc_if, esp
         if (param->get_char.status == ESP_GATT_OK) {
             if (param->get_char.char_uuid.uuid.uuid16 == GATT_CHAR_TX_UUID) {
                 char_handle_tx = param->get_char.char_handle;
+                ESP_LOGI(TAG, "Found TX characteristic, handle: %d", char_handle_tx);
             } else if (param->get_char.char_uuid.uuid.uuid16 == GATT_CHAR_RX_UUID) {
                 char_handle_rx = param->get_char.char_handle;
+                ESP_LOGI(TAG, "Found RX characteristic, handle: %d", char_handle_rx);
+                
+                // Enable notification for RX characteristic
+                esp_ble_gattc_register_for_notify(gattc_if, slave_bda, param->get_char.char_handle);
             }
+        }
+        break;
+
+    case ESP_GATTC_REG_FOR_NOTIFY_EVT:
+        ESP_LOGI(TAG, "Register for notify status: %d", param->reg_for_notify.status);
+        if (param->reg_for_notify.status == ESP_GATT_OK) {
+            uint16_t notify_en = 1;
+            esp_ble_gattc_write_char_descr(gattc_if, slave_conn_id, 
+                                          param->reg_for_notify.handle + 1,  // CCCD handle is next after char handle
+                                          sizeof(notify_en), (uint8_t*)&notify_en,
+                                          ESP_GATT_WRITE_TYPE_RSP, ESP_GATT_AUTH_REQ_NONE);
+            ESP_LOGI(TAG, "Notification enabled");
         }
         break;
 

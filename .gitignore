@@ -17,3 +17,9 @@ esp-idf/
 # OS files
 .DS_Store
 Thumbs.db
+.env
+
+# Other
+esp-idf/
+.uploads/
+*.log
