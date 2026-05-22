@@ -17,9 +17,6 @@ static uint16_t char_handle_rx = 0;
 
 static void (*data_callback)(const uint8_t*, uint16_t) = NULL;
 
-#define GATTS_SERVICE_UUID_TEST   0xFFFF
-#define GATTS_CHAR_UUID_TEST_TX   0xFF01
-#define GATTS_CHAR_UUID_TEST_RX   0xFF02
 #define PROFILE_NUM               1
 #define PROFILE_APP_IDX           0
 
